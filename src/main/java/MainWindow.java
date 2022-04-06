@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.Vector;
 
 public class MainWindow extends JFrame {
@@ -12,24 +14,31 @@ public class MainWindow extends JFrame {
     private JButton create;
     private JButton remove;
     private CreateWindow createWindow;
-    private Handler handler;
+    public Handler handler;
     private Vector<Restaurant> checkEmpty;
+    private DefaultListModel model;
+    private int createCount;
 
+    /**
+     * Constructor for the Main Window
+     */
     public MainWindow() {
         super("Restaurants");
+        ImageIcon icon = new ImageIcon("icon.jpg");
+        this.setIconImage(icon.getImage());
         this.setSize(10, 10);
         init();
         this.pack();
         this.setVisible(true);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
+    /**
+     * Function to initialize the components of the Main Window
+     */
     private void init() {
+        createCount = 0;
         handler = new Handler();
-        checkEmpty = handler.readJSON();
-        if(checkEmpty.size() == 0) {
-            handler.createExamles();
-        }
-
         panel = new JPanel(new BorderLayout());
         nav = new JPanel(new BorderLayout());
 
@@ -39,8 +48,10 @@ public class MainWindow extends JFrame {
         nav.add(remove, BorderLayout.LINE_START);
         panel.add(nav, BorderLayout.NORTH);
 
-
-        DefaultListModel model = new DefaultListModel();
+        /**
+         * Add the Data from the JSON to the DefaultListModel
+         */
+        model = new DefaultListModel();
         for (Restaurant restaurant : handler.getRestaurants()) {
             model.addElement(restaurant.getName() + " " + restaurant.getOpens() + " to " +
                     restaurant.getCloses());
@@ -51,6 +62,23 @@ public class MainWindow extends JFrame {
         scrollPane = new JScrollPane();
         scrollPane.setViewportView(restaurantList);
         restaurantList.setLayoutOrientation(JList.VERTICAL);
+        /**
+         * On hover on the Jlist show a tooltip containing the address of the restaurant
+         */
+        restaurantList.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                JList l = (JList) e.getSource();
+                ListModel m = l.getModel();
+                int index = l.locationToIndex(e.getPoint());
+                try {
+                    l.setToolTipText(handler.getRestaurants().get(index).getAddress());
+                } catch (Exception ex) {
+
+                }
+
+            }
+        });
 
         panel.add(scrollPane);
 
@@ -60,17 +88,21 @@ public class MainWindow extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    MainWindow.getWindows()[1].dispose();
-                    createWindow = new CreateWindow();
-                    createWindow.init();
+                    if (createCount == 0) {
+                        createWindow = new CreateWindow();
+                        createWindow.init(MainWindow.this);
+                    }
+
                 } catch (Exception ex) {
                     createWindow = new CreateWindow();
-                    createWindow.init();
+                    createWindow.init(MainWindow.this);
                 }
 
             }
         });
-
+        /**
+         * ActionListener for the remove-button, user is asked in a JOptionPane if they really want to remove the entry
+         */
         remove.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -94,6 +126,26 @@ public class MainWindow extends JFrame {
         });
     }
 
+    /**
+     * Function for the CreateWindow window so the DefaultListModel is updated on creation of a new entry
+     *
+     * @param restaurant
+     */
+    public void updateList(Restaurant restaurant) {
+        model.addElement(restaurant.getName() + " " + restaurant.getOpens() + " to " +
+                restaurant.getCloses());
+        restaurantList.updateUI();
+    }
+
+    /**
+     * CreateWindow class calls this function so only one create-window can be opened at the same time
+     *
+     * @param count
+     */
+    public void setWindowCount(int count) {
+        this.createCount = this.createCount + count;
+
+    }
 
     public static void main(String[] args) {
         MainWindow window = new MainWindow();

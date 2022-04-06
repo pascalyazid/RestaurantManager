@@ -1,25 +1,24 @@
-
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.swing.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.sql.SQLOutput;
+import java.util.Arrays;
 import java.util.Vector;
 
 public class Handler extends DefaultListModel {
     Vector<Restaurant> restaurants;
 
-    public Handler() {}
+    public Handler() {
+        this.restaurants = readJSON();
+    }
 
+    /**
+     * Function for testing
+     */
     public void createExamles() {
         Vector<Restaurant> map = new Vector<>();
         for (int i = 0; i < 6; i++) {
@@ -29,13 +28,23 @@ public class Handler extends DefaultListModel {
         this.restaurants = map;
     }
 
+    /**
+     * Called when a new restaurant is created to save it to the json file and update the DefaultListModel
+     * @param restaurant
+     */
     public void addRestaurant(Restaurant restaurant) {
         this.restaurants.add(restaurant);
+        writeJSON(this.restaurants);
         fireIntervalAdded(this, 0, restaurants.size());
     }
 
+    /**
+     * Called when a restaurant is removed to save the update list to the json file and update the DefaultListModel
+     * @param index
+     */
     public void removeRestaurant(int index) {
         this.restaurants.remove(index);
+        writeJSON(this.restaurants);
         fireIntervalRemoved(this, 0, restaurants.size());
     }
 
@@ -43,6 +52,10 @@ public class Handler extends DefaultListModel {
         return this.restaurants;
     }
 
+    /**
+     * Function used for the createExamples function to create a random restaurant from an API
+     * @return
+     */
     public static Restaurant randomRestaurant() {
 
         Restaurant restaurant = null;
@@ -72,23 +85,34 @@ public class Handler extends DefaultListModel {
         return restaurant;
     }
 
+    /**
+     * Function that writes the current Vector of restaurants to the JSON-File
+     * @param restaurants
+     */
     public void writeJSON(Vector<Restaurant> restaurants) {
         ObjectMapper mapper = new ObjectMapper();
-
+        this.restaurants = restaurants;
         try {
-            String json = mapper.writeValueAsString(restaurants);
-        } catch (JsonProcessingException e) {
+            mapper.writeValue(new File("src/main/java/restaurant.json"), restaurants);
+
+        }catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Function that reads the restaurants from the JSON-File to a Vector
+     * @return
+     */
     public Vector<Restaurant> readJSON() {
-        Vector<Restaurant> restaurants = null;
-        ObjectMapper objectMapper = new ObjectMapper();
+        Vector<Restaurant> restaurants = new Vector<>();
         try {
-            File file = new File("/src/main/java/restaurant.json");
-            System.out.println(new File(".").getAbsolutePath());
-           restaurants = objectMapper.readValue(file, Vector.class);
+            InputStream inputStream = new FileInputStream("src/main/java/restaurant.json");
+            ObjectMapper mapper = new ObjectMapper();
+
+            Restaurant[]restaurants1 = mapper.readValue(inputStream, Restaurant[].class);
+            restaurants.addAll(Arrays.asList(restaurants1));
+
         } catch (Exception e) {
             e.printStackTrace();
         }
