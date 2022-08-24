@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Vector;
@@ -17,7 +18,7 @@ public class Handler extends DefaultListModel {
     }
 
     /**
-     * Function for testing
+     * Function for testi ng
      */
     public void createExamles() {
         Vector<Restaurant> map = new Vector<>();
@@ -87,15 +88,41 @@ public class Handler extends DefaultListModel {
 
     /**
      * Function that writes the current Vector of restaurants to the JSON-File
-     * @param restaurants
+     * @param map
      */
-    public void writeJSON(Vector<Restaurant> restaurants) {
-        ObjectMapper mapper = new ObjectMapper();
-        this.restaurants = restaurants;
+    public void writeJSON(Vector<Restaurant> map) {
         try {
-            mapper.writeValue(new File("src/main/java/restaurant.json"), restaurants);
 
-        }catch (IOException e) {
+            URL url = new URL ("https://api.npoint.io/03f61026c30f01cc67b2");
+            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setDoOutput(true);
+
+
+
+            String jsonInputString = new ObjectMapper().writeValueAsString(map.toArray());
+            jsonInputString = "[" + jsonInputString.substring(1, jsonInputString.length() - 1) + "]";
+
+
+
+            try(OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input);
+            }
+
+            try(BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine = null;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+            }
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -107,10 +134,16 @@ public class Handler extends DefaultListModel {
     public Vector<Restaurant> readJSON() {
         Vector<Restaurant> restaurants = new Vector<>();
         try {
-            InputStream inputStream = new FileInputStream("src/main/java/restaurant.json");
-            ObjectMapper mapper = new ObjectMapper();
 
-            Restaurant[]restaurants1 = mapper.readValue(inputStream, Restaurant[].class);
+            URL url = new URL("https://api.npoint.io/03f61026c30f01cc67b2");
+
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestProperty("accept", "application/json");
+
+            InputStream responseStream = connection.getInputStream();
+            ObjectMapper mapper = new ObjectMapper();
+            Restaurant[] restaurants1 = mapper.readValue(responseStream, Restaurant[].class);
             restaurants.addAll(Arrays.asList(restaurants1));
 
         } catch (Exception e) {

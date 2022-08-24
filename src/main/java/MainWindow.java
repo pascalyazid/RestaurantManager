@@ -72,7 +72,9 @@ public class MainWindow extends JFrame {
                 ListModel m = l.getModel();
                 int index = l.locationToIndex(e.getPoint());
                 try {
-                    l.setToolTipText(handler.getRestaurants().get(index).getAddress());
+                    l.setToolTipText(handler.getRestaurants().get(index).getAddress() + ", "
+                    + handler.getRestaurants().get(index).getType() + ", "
+                    + handler.restaurants.get(index).getDesc());
                 } catch (Exception ex) {
 
                 }
